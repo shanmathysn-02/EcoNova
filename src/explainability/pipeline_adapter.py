@@ -4,18 +4,21 @@ import yaml
 import numpy as np
 import tensorflow as tf
 
-from .gradcam import (
+from src.explainability.gradcam import (
     generate_gradcam,
     InvalidLayerError,
     InvalidInputError,
     ComputationError,
 )
-from .visualizer import save_explanation
+from src.explainability.visualizer import save_explanation
+from src.explainability.advanced_cam import generate_scorecam, should_use_scorecam, ScoreCAMError
+from src.explainability.report_generator import generate_clinical_report, ReportGenerationError
+from src.explainability.low_bandwidth import generate_low_bandwidth_explanation
+from src.explainability.longitudinal import compare_with_prior, load_prior_explanation, save_current_explanation
 
 try:
-    from .visualizer import VisualizerIOError
+    from src.explainability.visualizer import VisualizerIOError
 except ImportError:
-    # Fallback exception definition if not defined in visualizer.py
     class VisualizerIOError(IOError):
         pass
 
@@ -28,29 +31,15 @@ def run_explanation_pipeline(
     model: tf.keras.Model,
     prediction_result,
     request_id: str,
-) -> dict | None:
-    """Executes the explainability pipeline (Grad-CAM and visual overlay generation).
-
-    Args:
-        preprocessed_image: Normalised image array (1, 224, 224, 3) float32.
-        original_image_uint8: Original image array (224, 224, 3) uint8 RGB.
-        model: Pre-trained TensorFlow/Keras model.
-        prediction_result: Result object containing predictions (class_index, class_label, confidence).
-        request_id: Unique 8-character request identifier.
-
-    Returns:
-        A dictionary containing heatmap_url, highlighted_regions, and computation_time_ms.
-
-    Raises:
-        InvalidLayerError: If the target conv layer is not found.
-        InvalidInputError: If input arguments or shapes are invalid.
-        ComputationError: If Grad-CAM calculation fails.
-        VisualizerIOError: If explanation overlay save operation fails.
-    """
+    explain_mode: str = "standard",
+    low_bandwidth: bool = False,
+    generate_report: bool = False,
+    patient_id: str | None = None,
+) -> dict:
+    """Executes the explainability pipeline with advanced features."""
     try:
-        # 1. Load config from "config.yaml"
         config_path = "config.yaml"
-        last_conv_layer = "top_conv"  # Default fallback
+        last_conv_layer = "top_conv"
         
         if os.path.exists(config_path):
             try:
@@ -62,35 +51,40 @@ def run_explanation_pipeline(
                     elif "model" in config and isinstance(config["model"], dict):
                         last_conv_layer = config["model"].get("last_conv_layer", "top_conv")
             except Exception as parse_err:
-                logger.warning(
-                    f"Could not parse '{config_path}', using default fallback: {str(parse_err)}"
-                )
+                logger.warning(f"Could not parse '{config_path}', using default fallback: {str(parse_err)}")
 
-        # 2. Call generate_gradcam
-        gradcam_result = generate_gradcam(
-            image=preprocessed_image,
-            model=model,
-            last_conv_layer_name=last_conv_layer,
-            class_index=prediction_result.class_index,
-            alpha=0.4,
-        )
+        cam_result = None
+        if explain_mode in ["standard", "auto"]:
+            cam_result = generate_gradcam(
+                image=preprocessed_image,
+                model=model,
+                last_conv_layer_name=last_conv_layer,
+                class_index=prediction_result.class_index,
+                alpha=0.4,
+            )
 
-        # 3. Construct filename
+        if explain_mode == "advanced" or (explain_mode == "auto" and should_use_scorecam(cam_result)):
+            cam_result = generate_scorecam(
+                image=preprocessed_image,
+                model=model,
+                target_size=(224, 224),
+                class_index=prediction_result.class_index
+            )
+
         filename = f"hm_{request_id}.jpg"
+        heatmaps_dir = os.path.join("static", "heatmaps")
+        output_path = os.path.join(heatmaps_dir, filename)
 
-        # 4. Construct output_path using os.path.join for cross-platform compatibility
-        output_path = os.path.join("static", "heatmaps", filename)
-
-        # 5. Call save_explanation
         prediction_data = {
             "class_label": prediction_result.class_label,
             "confidence": prediction_result.confidence,
+            "probabilities": getattr(prediction_result, "probabilities", {})
         }
         
         try:
             save_explanation(
                 original_image=original_image_uint8,
-                overlay=gradcam_result.overlay,
+                overlay=cam_result.overlay,
                 prediction=prediction_data,
                 output_path=output_path,
             )
@@ -99,22 +93,46 @@ def run_explanation_pipeline(
                 raise VisualizerIOError(str(io_err)) from io_err
             raise io_err
 
-        # 6. Return dict exactly as requested
-        return {
+        explanation_dict = {
             "heatmap_url": f"/static/heatmaps/{filename}",
             "highlighted_regions": [
-                {
-                    "x": r.x,
-                    "y": r.y,
-                    "w": r.w,
-                    "h": r.h,
-                    "confidence": round(r.confidence, 4),
-                }
-                for r in gradcam_result.highlighted_regions
+                {"x": r.x, "y": r.y, "w": r.w, "h": r.h, "confidence": round(r.confidence, 4)}
+                for r in cam_result.highlighted_regions
             ],
-            "computation_time_ms": round(gradcam_result.computation_time_ms, 2),
+            "computation_time_ms": round(cam_result.computation_time_ms, 2),
         }
 
-    except (InvalidLayerError, InvalidInputError, ComputationError, VisualizerIOError) as e:
-        logger.error(f"Grad-CAM Explanation Pipeline failure: {str(e)}", exc_info=True)
+        if low_bandwidth:
+            explanation_dict["low_bandwidth"] = generate_low_bandwidth_explanation(
+                overlay=cam_result.overlay,
+                heatmap=cam_result.heatmap,
+                output_dir=heatmaps_dir,
+                request_id=request_id
+            )
+
+        if generate_report:
+            report_path = os.path.join("static", "reports", f"report_{request_id}.jpg")
+            explanation_dict["report_url"] = f"/static/reports/report_{request_id}.jpg"
+            generate_clinical_report(
+                original_image=original_image_uint8,
+                heatmap=cam_result.heatmap,
+                overlay=cam_result.overlay,
+                prediction_dict=prediction_data,
+                highlighted_regions=cam_result.highlighted_regions,
+                output_path=report_path
+            )
+
+        if patient_id:
+            prior_regions = load_prior_explanation(patient_id)
+            if prior_regions is not None:
+                explanation_dict["longitudinal_comparison"] = compare_with_prior(cam_result.highlighted_regions, prior_regions)
+            save_current_explanation(patient_id, cam_result.highlighted_regions, request_id)
+
+        return explanation_dict
+
+    except (InvalidLayerError, InvalidInputError, ComputationError, VisualizerIOError, ScoreCAMError, ReportGenerationError) as e:
+        logger.error(f"Explanation Pipeline failure: {str(e)}", exc_info=True)
+        raise e
+    except Exception as e:
+        logger.error(f"Unexpected Pipeline failure: {str(e)}", exc_info=True)
         raise e

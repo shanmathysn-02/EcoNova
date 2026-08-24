@@ -52,34 +52,44 @@ def predict():
     # 3. Generate request ID (Member 4's task)
     request_id = str(uuid.uuid4())[:8]
 
-    # === MEMBER 2 INTEGRATION START
+    # === MEMBER 2 PHASE 3 INTEGRATION START
     import logging
     from src.explainability.pipeline_adapter import run_explanation_pipeline
     from src.explainability.gradcam import InvalidLayerError, InvalidInputError, ComputationError
+    from src.explainability.advanced_cam import ScoreCAMError
+    from src.explainability.report_generator import ReportGenerationError
+
     try:
         from src.explainability.visualizer import VisualizerIOError
     except ImportError:
-        class VisualizerIOError(IOError):
-            pass
+        class VisualizerIOError(IOError): pass
 
     integration_logger = logging.getLogger(__name__)
 
-    # Run the explanation pipeline
+    explain_mode = request.args.get("explain_mode", "standard")
+    low_bandwidth = request.args.get("low_bandwidth", "false").lower() == "true"
+    generate_report = request.args.get("report", "false").lower() == "true"
+    patient_id = request.args.get("patient_id", None)
+
     try:
         explanation = run_explanation_pipeline(
-            preprocessed_image=preprocessed_image,      # np.ndarray shape (1, 224, 224, 3)
-            original_image_uint8=original_image_uint8,  # np.ndarray shape (224, 224, 3)
-            model=model,                                # Loaded Keras Model
-            prediction_result=prediction_result,        # Member 1's PredictionResult
-            request_id=request_id                        # 8-character UUID string
+            preprocessed_image=preprocessed_image,
+            original_image_uint8=original_image_uint8,
+            model=model,
+            prediction_result=prediction_result,
+            request_id=request_id,
+            explain_mode=explain_mode,
+            low_bandwidth=low_bandwidth,
+            generate_report=generate_report,
+            patient_id=patient_id
         )
     except InvalidInputError as e:
-        integration_logger.warning(f"Grad-CAM explanation skipped due to invalid input: {str(e)}")
+        integration_logger.warning(f"Explanation skipped due to invalid input: {str(e)}")
         explanation = None
-    except (InvalidLayerError, ComputationError, VisualizerIOError) as e:
-        integration_logger.error(f"Grad-CAM explanation failed: {str(e)}", exc_info=True)
+    except (InvalidLayerError, ComputationError, VisualizerIOError, ScoreCAMError, ReportGenerationError) as e:
+        integration_logger.error(f"Explanation pipeline failed: {str(e)}", exc_info=True)
         explanation = None
-    # === MEMBER 2 INTEGRATION END
+    # === MEMBER 2 PHASE 3 INTEGRATION END
 
     return jsonify({
         "success": True,
