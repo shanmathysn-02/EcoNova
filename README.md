@@ -20,13 +20,13 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
  2. Place model
-# Download or train retinopathy_model.keras and place in models/
+ Download or train retinopathy_model.keras and place in models/
 
  3. Run backend
 cd src/api
 python app.py
 
-# 4. Open frontend
+ 4. Open frontend
 # Open frontend/index.html in browser or use Live Server
 📁 Project Structure
 See api_contracts.md for full directory tree and interface specifications.
