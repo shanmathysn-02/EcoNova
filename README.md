@@ -14,7 +14,7 @@ plain
 Frontend (HTML/JS)  →  Flask API  →  Preprocessing  →  AI Model  →  Grad-CAM  →  Result
 🚀 Quick Start
 bash
-# 1. Clone and setup
+ 1. Clone and setup
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
