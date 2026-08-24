@@ -1,0 +1,2 @@
+model:
+  last_conv_layer: "top_conv"
