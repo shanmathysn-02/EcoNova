@@ -55,7 +55,7 @@
         <!-- Error Alert Banner -->
         <div id="validationAlert" class="alert alert-danger alert-dismissible fade show d-none mb-4" role="alert">
           <div class="d-flex align-items-start gap-2">
-            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger mt-1"></i>
+            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger mt-1 flex-shrink-0"></i>
             <div>
               <strong id="alertTitle">Validation Error</strong>
               <div id="alertMessage" class="small mt-1">Please select a valid image file.</div>
@@ -72,7 +72,7 @@
               <span>Retinal Image Selection</span>
             </span>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
-              Phase 2 Interface
+              Phase 3 API Integration
             </span>
           </div>
 
@@ -121,12 +121,22 @@
 
             </div>
 
+            <!-- Loading / Analysis State Container -->
+            <div id="loadingStateContainer" class="p-4 bg-light rounded-3 border text-center my-3 d-none">
+              <div class="spinner-border text-primary me-2" role="status" style="width: 2.5rem; height: 2.5rem;">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              <h5 class="fw-bold text-dark mt-3 mb-1">Analyzing retinal image...</h5>
+              <p class="text-muted small mb-0">Please wait while the system processes the image.</p>
+            </div>
+
             <!-- Analyze Image Action Button -->
             <div class="d-grid gap-2">
               <button type="button" id="analyzeBtn" class="btn btn-medical-primary btn-lg py-3 fw-bold" disabled>
-                <i class="bi bi-cpu-fill me-2"></i>Analyze Image
+                <i class="bi bi-cpu-fill me-2" id="analyzeBtnIcon"></i>
+                <span id="analyzeBtnText">Analyze Image</span>
               </button>
-              <small class="text-muted text-center mt-1">
+              <small class="text-muted text-center mt-1" id="analyzeHelpText">
                 <i class="bi bi-info-circle me-1"></i>Analyze button is enabled after selecting a valid JPG, JPEG, or PNG fundus photograph.
               </small>
             </div>

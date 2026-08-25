@@ -1,6 +1,6 @@
 /**
  * Diabetic Retinopathy Screening System
- * Phase 2 - Retinal Image Upload Controller
+ * Phase 3 - Retinal Image Upload & API Integration Controller
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileNameDisplay = document.getElementById('fileNameDisplay');
   const fileSizeDisplay = document.getElementById('fileSizeDisplay');
   const removeFileBtn = document.getElementById('removeFileBtn');
+  
+  // Action & Loading Elements
   const analyzeBtn = document.getElementById('analyzeBtn');
+  const analyzeBtnIcon = document.getElementById('analyzeBtnIcon');
+  const analyzeBtnText = document.getElementById('analyzeBtnText');
+  const loadingStateContainer = document.getElementById('loadingStateContainer');
 
   // Alert Elements
   const validationAlert = document.getElementById('validationAlert');
@@ -85,8 +90,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!isExtensionValid && !isTypeValid) {
       showError(
-        'Unsupported File Format',
-        `"${file.name}" is not supported. Please select a JPG, JPEG, or PNG image.`
+        'Invalid Image Format',
+        'Invalid image format. Please upload a JPG, JPEG, or PNG image.'
       );
       resetUploadState();
       return;
@@ -136,16 +141,89 @@ document.addEventListener('DOMContentLoaded', () => {
     analyzeBtn.disabled = true;
   }
 
-  // Handle Analyze button click (Prepared for future API integration)
-  analyzeBtn.addEventListener('click', () => {
+  // Handle Analyze button click (Phase 3 API Integration)
+  analyzeBtn.addEventListener('click', async () => {
     if (!selectedFile) {
       showError('No File Selected', 'Please select a valid image before starting analysis.');
       return;
     }
 
-    console.log('Image selected and ready for future API integration:', selectedFile.name);
-    alert(`File "${selectedFile.name}" selected and ready for future API integration!`);
+    hideAlert();
+    setLoadingState(true);
+
+    try {
+      // Call backend API (POST /api/v1/predict)
+      const responseData = await APIClient.uploadImage(selectedFile);
+
+      // Store API response and preview temporarily in sessionStorage
+      sessionStorage.setItem('dr_screening_result', JSON.stringify(responseData));
+      sessionStorage.setItem('dr_uploaded_image_preview', imagePreview.src);
+      sessionStorage.setItem('dr_uploaded_image_meta', JSON.stringify({
+        fileName: selectedFile.name,
+        fileSize: selectedFile.size,
+        timestamp: new Date().toISOString()
+      }));
+
+      // Navigate to result page
+      window.location.href = 'result.html';
+
+    } catch (error) {
+      setLoadingState(false);
+      
+      let title = 'Screening Error';
+      let message = 'An unexpected error occurred during image screening.';
+
+      if (error instanceof APIError) {
+        if (error.errorCode === 'QUALITY_REJECTED' || error.status === 400) {
+          title = 'Image Quality Rejected';
+          message = 'Image quality is too low. Please upload or capture another retinal image.';
+        } else if (error.errorCode === 'INVALID_IMAGE_FORMAT' || error.status === 422) {
+          title = 'Invalid Image Format';
+          message = 'Invalid image format. Please upload a JPG, JPEG, or PNG image.';
+        } else if (error.errorCode === 'INTERNAL_ERROR' || error.status === 500) {
+          title = 'Service Error';
+          message = 'The prediction service could not process the image. Please try again.';
+        } else if (error.errorCode === 'NETWORK_ERROR') {
+          title = 'Connection Error';
+          message = 'Unable to connect to the screening server. Please make sure the backend server is running and try again.';
+        } else {
+          title = `Error (${error.errorCode})`;
+          message = error.message || message;
+        }
+      }
+
+      showError(title, message);
+    }
   });
+
+  // UI Helper: Toggle loading state
+  function setLoadingState(isLoading) {
+    if (isLoading) {
+      analyzeBtn.disabled = true;
+      removeFileBtn.disabled = true;
+      browseBtn.disabled = true;
+      fileInput.disabled = true;
+
+      analyzeBtnIcon.className = 'spinner-border spinner-border-sm me-2';
+      analyzeBtnText.textContent = 'Processing Image...';
+
+      if (loadingStateContainer) {
+        loadingStateContainer.classList.remove('d-none');
+      }
+    } else {
+      analyzeBtn.disabled = selectedFile === null;
+      removeFileBtn.disabled = false;
+      browseBtn.disabled = false;
+      fileInput.disabled = false;
+
+      analyzeBtnIcon.className = 'bi bi-cpu-fill me-2';
+      analyzeBtnText.textContent = 'Analyze Image';
+
+      if (loadingStateContainer) {
+        loadingStateContainer.classList.add('d-none');
+      }
+    }
+  }
 
   // Helper: Format file size
   function formatFileSize(bytes) {
