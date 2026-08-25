@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnostic Report — Diabetic Retinopathy Screening</title>
+  
+  <!-- Bootstrap 5 CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <!-- Bootstrap Icons CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <!-- Custom Medical Styles -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-bold text-dark" href="index.html">
+        <span class="brand-badge"><i class="bi bi-eye-fill me-1"></i>EcoNova</span>
+        <span class="fs-6 text-secondary d-none d-sm-inline">Diabetic Retinopathy Screening</span>
+      </a>
+      
+      <div class="d-flex align-items-center gap-2">
+        <a href="index.html" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+          <i class="bi bi-house-door-fill me-1"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container py-5 text-center">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+        <div class="card card-medical p-5">
+          <i class="bi bi-hourglass-split text-primary fs-1 mb-3"></i>
+          <h3 class="fw-bold text-dark mb-2">Diagnostic Results Module</h3>
+          <p class="text-muted mb-4">
+            AI classification results, confidence scores, and Grad-CAM saliency heatmaps are reserved for subsequent implementation phases.
+          </p>
+          <div>
+            <a href="upload.html" class="btn btn-medical-primary px-4 py-2 me-2">
+              <i class="bi bi-cloud-arrow-up-fill me-1"></i>Upload Another Image
+            </a>
+            <a href="index.html" class="btn btn-outline-secondary px-4 py-2">
+              <i class="bi bi-house-door-fill me-1"></i>Back to Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-top py-4 mt-auto">
+    <div class="container text-center">
+      <div class="text-muted small">
+        &copy; 2026 EcoNova AI Diabetic Retinopathy Screening System &bull; Module 5 Web Interface
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="js/api.js"></script>
+  <script src="js/result.js"></script>
+</body>
+</html>

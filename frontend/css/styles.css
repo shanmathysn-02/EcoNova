@@ -1,6 +1,6 @@
 /* ==========================================================================
    EcoNova - Diabetic Retinopathy Screening System
-   Phase 1 Medical-Grade Stylesheet
+   Phase 1 & Phase 2 Medical-Grade Stylesheet
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -96,6 +96,15 @@ main {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.card-header-medical {
+  background-color: #ffffff;
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  padding: 1rem 1.25rem;
+  border-top-left-radius: 12px !important;
+  border-top-right-radius: 12px !important;
+}
+
 .feature-card {
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   border-radius: 12px;
@@ -135,4 +144,80 @@ main {
   color: white;
   box-shadow: 0 4px 8px rgba(2, 132, 199, 0.3);
   transform: translateY(-1px);
+}
+
+.btn-medical-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Phase 2 Drag and Drop Zone & Image Preview
+   ========================================================================== */
+.drop-zone {
+  border: 2px dashed #94a3b8;
+  border-radius: 16px;
+  background-color: #ffffff;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+}
+
+.drop-zone:hover {
+  border-color: var(--primary-blue);
+  background-color: #f0f9ff;
+}
+
+.drop-zone.dragover {
+  border-color: var(--primary-blue);
+  background-color: #e0f2fe;
+  transform: scale(1.01);
+  box-shadow: var(--shadow-md);
+}
+
+.drop-zone-icon {
+  font-size: 3.25rem;
+  color: var(--primary-blue);
+  margin-bottom: 0.75rem;
+}
+
+.preview-container {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #0f172a;
+  position: relative;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-img {
+  max-height: 380px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  transition: transform 0.2s ease;
+}
+
+.preview-img:hover {
+  transform: scale(1.02);
+}
+
+.image-label-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 10;
 }
